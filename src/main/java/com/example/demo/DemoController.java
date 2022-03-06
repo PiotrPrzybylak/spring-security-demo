@@ -6,26 +6,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.util.*;
 
 @RestController
 public class DemoController {
-
-    public class Session {
-
-        private Map<String, Object> attributes = new HashMap<>();
-
-        void setAttribute(String name, Object value) {
-            attributes.put(name, value);
-        }
-
-        Object getAttribute (String name) {
-           return attributes.get(name);
-        }
-    }
-
-    private final Random random = new Random();
-    private final Map<String, Session> sessions = new HashMap<>();
 
     @GetMapping("/")
     public String home() {
@@ -42,40 +27,22 @@ public class DemoController {
         return "Welcome to our secret page!";
     }
 
-
-    @GetMapping("/login")
-    public String login(HttpServletResponse response) {
-
-        // create a cookie
-        String sessionID = "" + random.nextInt();
-        Cookie cookie = new Cookie("super_secret_something", sessionID);
-        sessions.put(sessionID, new Session());
-
-        //add cookie to response
-        response.addCookie(cookie);
-        return "Welcome to our secret page!";
-    }
-
-
     @GetMapping("/addtocart")
-    public String secret(String product, @CookieValue("super_secret_something") String id) {
+    public String secret(String product, HttpSession httpSession) {
 
-        Session session = sessions.get(id);
-
-        List<String> userProducts = (List<String>) session.getAttribute("products");
+        List<String> userProducts = (List<String>) httpSession.getAttribute("products");
         if (userProducts == null) {
             userProducts = new ArrayList<>();
         }
         userProducts.add(product);
-        session.setAttribute("products", userProducts);
-
+        httpSession.setAttribute("products", userProducts);
 
         return "Thank you for you purchase! You bought: " + product;
     }
 
     @GetMapping("/cart")
-    public List<String> cart(@CookieValue("super_secret_something") String id) {
-        return (List<String>) sessions.get(id).getAttribute("products");
+    public List<String> cart(HttpSession httpSession) {
+        return (List<String>) httpSession.getAttribute("products");
     }
 
 }
