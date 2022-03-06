@@ -11,8 +11,21 @@ import java.util.*;
 @RestController
 public class DemoController {
 
+    public class Session {
+
+        private Map<String, Object> attributes = new HashMap<>();
+
+        void setAttribute(String name, Object value) {
+            attributes.put(name, value);
+        }
+
+        Object getAttribute (String name) {
+           return attributes.get(name);
+        }
+    }
+
     private final Random random = new Random();
-    private final Map<String, Map<String, Object>> sessions = new HashMap<>();
+    private final Map<String, Session> sessions = new HashMap<>();
 
     @GetMapping("/")
     public String home() {
@@ -36,7 +49,7 @@ public class DemoController {
         // create a cookie
         String sessionID = "" + random.nextInt();
         Cookie cookie = new Cookie("super_secret_something", sessionID);
-        sessions.put(sessionID, new HashMap<>());
+        sessions.put(sessionID, new Session());
 
         //add cookie to response
         response.addCookie(cookie);
@@ -47,11 +60,14 @@ public class DemoController {
     @GetMapping("/addtocart")
     public String secret(String product, @CookieValue("super_secret_something") String id) {
 
-        Map<String, Object> session = sessions.get(id);
+        Session session = sessions.get(id);
 
-        List<String> userProducts = (List<String>) session.getOrDefault("products", new ArrayList<>());
+        List<String> userProducts = (List<String>) session.getAttribute("products");
+        if (userProducts == null) {
+            userProducts = new ArrayList<>();
+        }
         userProducts.add(product);
-        session.put("products", userProducts);
+        session.setAttribute("products", userProducts);
 
 
         return "Thank you for you purchase! You bought: " + product;
@@ -59,7 +75,7 @@ public class DemoController {
 
     @GetMapping("/cart")
     public List<String> cart(@CookieValue("super_secret_something") String id) {
-        return (List<String>) sessions.get(id).get("products");
+        return (List<String>) sessions.get(id).getAttribute("products");
     }
 
 }
